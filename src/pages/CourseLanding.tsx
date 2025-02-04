@@ -1,60 +1,32 @@
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-import './App.css'
-import Layout, { Content, Footer } from 'antd/es/layout/layout'
-import { Button, DatePicker, Flex, Form, Input, Select } from 'antd'
-const { Option } = Select;
-import Title from 'antd/es/typography/Title';
-import { useEffect, useState } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
-import dayjs from 'dayjs';
-import { useSearchParams } from 'react-router-dom';
+import { useKeycloak } from "@react-keycloak/web";
+import { Button, DatePicker, Flex, Form, Input, Layout, Select } from "antd";
+import { Content, Footer } from "antd/es/layout/layout";
+import Title from "antd/es/typography/Title";
+import dayjs from "dayjs";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
-function App() {
-  const [searchParams] = useSearchParams();
-  const { keycloak } = useKeycloak();
-  // const [count, setCount] = useState(0)
+export default function CourseLanding() {
+
   type General = {
-    id: string | null;
-    name: string | null;
-    firstName: string | null;
-    lastName: string | null;
-    email: string | null;
-    birthdate?: string | null;
+    id: string | undefined;
+    name: string | undefined;
+    firstName: string | undefined;
+    lastName: string | undefined;
+    email: string | undefined;
+    birthdate?: string | undefined;
   }
+
   type Study = {
-    id?: string | null;
-    userId: string | null;
-    subjectId: string | null;
-    subjectName: string | null
-    school: string | null;
-    grade: string | null;
-    level?: number | null;
-    classRoom?: number | null;
+    id?: string;
+    userId: string | undefined;
+    subjectId: string | undefined;
+    subjectName: string | undefined;
+    school: string | undefined;
+    grade: string | undefined;
+    level?: number;
+    classRoom?: number;
   }
-
-  const [general, setGeneral] = useState<General>({
-    id: null,
-    name: null,
-    firstName: null,
-    lastName: null,
-    email: null,
-    birthdate: null
-  });
-
-  const [study, setStudy] = useState<Study>({
-    userId: null,
-    subjectId: null,
-    subjectName: null,
-    school: null,
-    grade: null,
-    level: null,
-    classRoom: null
-  });
-
-  const [generalDisabledForm, setGeneralDisabledForm] = useState<boolean>(false);
-  const [studyDisabledForm, setStudylDisabledForm] = useState<boolean>(false);
 
   // const grades = ['ประถมศึกษา', 'มัธยมศึกษา', 'ปวช.', 'ปวส.', 'ปริญญาตรี', 'ปริญญาโท', 'ปริญญาเอก'];
   const grades = {
@@ -67,17 +39,33 @@ function App() {
     doctoral: 'ปริญญาเอก'
   };
 
+  const { Option } = Select;
+  const [searchParams] = useSearchParams();
+  const { keycloak } = useKeycloak();
+  const [generalDisabledForm, setGeneralDisabledForm] = useState<boolean>(false);
+  const [studyDisabledForm, setStudylDisabledForm] = useState<boolean>(false);
+
   const [formGeneral] = Form.useForm();
   const [formStudy] = Form.useForm();
 
-  // const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
-  //   console.log('Success:', values);
-  // };
+  const [general, setGeneral] = useState<General>({
+    id: undefined,
+    name: undefined,
+    firstName: undefined,
+    lastName: undefined,
+    email: undefined,
+    birthdate: undefined
+  });
 
-  // const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
-  //   console.log('Failed:', errorInfo);
-  // };
-
+  const [study, setStudy] = useState<Study>({
+    userId: undefined,
+    subjectId: undefined,
+    subjectName: undefined,
+    school: undefined,
+    grade: undefined,
+    level: undefined,
+    classRoom: undefined
+  });
 
   const fetchAPI = async (method: 'GET' | 'POST' | 'DELETE' | 'PATCH', endpoint: string, token: string | null = null, body: Object = {}): Promise<any> => {
     const response = await fetch(endpoint, {
@@ -106,7 +94,7 @@ function App() {
           formGeneral.setFieldsValue({ firstname: keycloak.tokenParsed?.['given_name'], lastname: keycloak.tokenParsed?.['family_name'] });
           setGeneral({
             ...general,
-            id: keycloak.tokenParsed?.['sub'] || null,
+            id: keycloak.tokenParsed?.['sub'],
             name: keycloak.tokenParsed?.['name'],
             firstName: keycloak.tokenParsed?.['given_name'],
             lastName: keycloak.tokenParsed?.['family_name'],
@@ -129,7 +117,7 @@ function App() {
         formStudy.setFieldsValue({ subjectId: f['courseKey'], subjectName: f['courseTitle'] });
         setStudy({
           ...study,
-          userId: keycloak.tokenParsed?.sub || null,
+          userId: keycloak.tokenParsed?.sub,
           subjectId: f['courseKey'],
           subjectName: f['courseTitle'],
         })
@@ -148,10 +136,10 @@ function App() {
     // fetchStudy(keycloak.tokenParsed?.sub || '');
     // console.log(keycloak);
     // keycloak.logout()
-    console.log(
-      // searchParams.get('usageId')
-    );
-    
+    // console.log(
+    //   searchParams.get('usageId')
+    // );
+
   }, [])
 
   const handleGeneralSubmit = (value: General): void => {
@@ -349,9 +337,9 @@ function App() {
                         setStudy({
                           ...study,
                           grade: e,
-                          ...(!['primary', 'secondary'].includes(e) && { level: null, classRoom: null })
+                          ...(!['primary', 'secondary'].includes(e) && { level: undefined, classRoom: undefined })
                         }),
-                          !['primary', 'secondary'].includes(e) && formStudy.setFieldsValue({ level: null, classRoom: null });
+                        !['primary', 'secondary'].includes(e) && formStudy.setFieldsValue({ level: undefined, classRoom: undefined }),
                         formStudy.validateFields(['level', 'classRoom']);
                       }
 
@@ -378,7 +366,7 @@ function App() {
                     >
                       {
                         Array.from({ length: 6 }, (_, i) => i + 1).map((value, index) => (
-                          <Option key={index} value={value}>{value}</Option>
+                          <Option key={`${index}`} value={value.toString()}>{value}</Option>
                         ))
                       }
                     </Select>
@@ -420,7 +408,7 @@ function App() {
                 </Form.Item>
               </Form>
             </div>
-            <div style={{textAlign: 'right'}}>
+            <div style={{ textAlign: 'right' }}>
               <Button onClick={() => keycloak.logout()} color="orange" variant="solid">
                 ออกจากระบบ
               </Button>
@@ -434,5 +422,3 @@ function App() {
     </>
   )
 }
-
-export default App
