@@ -7,27 +7,28 @@ import { useEffect, useState } from "react";
 export default function Profile() {
 
   type Profile = {
-    id: string | undefined;
-    name: string | undefined;
-    firstName: string | undefined;
-    lastName: string | undefined;
-    email: string | undefined;
-    birthdate?: string | undefined;
+    id?: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    birthdate?: string;
   }
 
   const { keycloak } = useKeycloak();
   const [formProfile] = Form.useForm();
   const [profileDisabledForm, setProfileDisabledForm] = useState<boolean>(false);
-  const [profile, setProfile] = useState<Profile>({
-    id: undefined,
-    name: undefined,
-    firstName: undefined,
-    lastName: undefined,
-    email: undefined,
-    birthdate: undefined
-  });
+  const [profile, setProfile] = useState<Profile>()
+  // const [profile, setProfile] = useState<Profile>({
+  //   id: undefined,
+  //   name: undefined,
+  //   firstName: undefined,
+  //   lastName: undefined,
+  //   email: undefined,
+  //   birthdate: undefined
+  // });
 
-  const fetchAPI = async (method: 'GET' | 'POST' | 'DELETE' | 'PATCH', endpoint: string, token: string | null = null, body: Object = {}): Promise<any> => {
+  const fetchAPI = async (method: 'GET' | 'POST' | 'DELETE' | 'PATCH', endpoint: string, token?: string, body?: Object): Promise<any> => {
     const response = await fetch(endpoint, {
       method: method,
       headers: {
@@ -77,6 +78,8 @@ export default function Profile() {
       // console.log(fetchUser);
       setProfileDisabledForm(true);
     }
+    console.log('effect');
+    
     fetchUser();
     // return () => {
     //   second
@@ -85,14 +88,14 @@ export default function Profile() {
 
 
   return (
-    <div>
+    <div style={{borderStyle: 'none'}}>
       <Title level={3}>ข้อมูลทั่วไป</Title>
       <Form
         name="general-information"
         form={formProfile}
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        style={{ maxWidth: 800 }}
+        labelCol={{ span: 4 }}
+        // wrapperCol={{ span: 16 }}
+        style={{ maxWidth: 600 }}
         initialValues={{ remember: true }}
         onFinish={handleProfileSubmit}
         // onFinishFailed={onFinishFailed}

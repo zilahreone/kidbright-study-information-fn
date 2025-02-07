@@ -1,13 +1,12 @@
 // import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-// import './index.css'
-import App from './App.tsx'
+import './index.css'
+// import App from './App.tsx'
 import { ConfigProvider, theme } from 'antd'
 import { ReactKeycloakProvider } from '@react-keycloak/web'
 import keycloak from './keycloak.ts'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import CourseLanding from './pages/CourseLanding.tsx'
-import Profile from './pages/Profile.tsx'
+import router from './routers/index.tsx'
+import { RouterProvider } from 'react-router-dom'
 
 // const eventLogger = (event: any, error: any) => {
 //   // 'onReady' | 'onInitError' | 'onAuthSuccess' | 'onAuthError' | 'onAuthRefreshSuccess' | 'onAuthRefreshError' | 'onAuthLogout' | 'onTokenExpired'
@@ -69,39 +68,6 @@ import Profile from './pages/Profile.tsx'
 //   // }
 // }
 
-enum RouterPath {
-  HOME = '/',
-  COUSE_LANDING = '/course-landing',
-  PROFILE = '/profile',
-  COURSE = '/course',
-  MANAGE = '/manage',
-}
-
-const Element = {
-  HOME: <></>,
-  COUSE_LANDING: <CourseLanding />,
-  PROFILE: <Profile />,
-}
-
-const router = createBrowserRouter([
-  {
-    path: RouterPath.HOME,
-    element: Element.HOME,
-  },
-  {
-    path: RouterPath.COUSE_LANDING,
-    element: Element.COUSE_LANDING,
-  },
-  {
-    path: RouterPath.PROFILE,
-    element: Element.PROFILE,
-  },
-], {
-  future: {
-    v7_relativeSplatPath: true
-  }
-});
-
 createRoot(document.getElementById('root')!).render(
   // <StrictMode>
   <ReactKeycloakProvider
@@ -125,7 +91,7 @@ createRoot(document.getElementById('root')!).render(
     }}>
       <RouterProvider router={router} future={{
         v7_startTransition: true,
-      }} />
+      }}/>
     </ConfigProvider>
   </ReactKeycloakProvider>
   // </StrictMode>,
