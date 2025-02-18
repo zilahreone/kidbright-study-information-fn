@@ -16,7 +16,7 @@ export default function ElementComponent({ hasHeader = true, hasFooter = true, c
   };
 
   const contentStyle: React.CSSProperties = {
-    minHeight: 'calc(100vh - (64px + 200px))', // Assuming footer height is 64px
+    minHeight: 'calc(100vh - (64px + 200px + 20px))', // Assuming footer height is 64px
     // padding: `0px 100px 0px`,
     // borderColor: 'red'
     // textAlign: 'center',
@@ -27,6 +27,7 @@ export default function ElementComponent({ hasHeader = true, hasFooter = true, c
   };
 
   const footerStyle: React.CSSProperties = {
+    marginTop: '20px',
     height: '200px',
     // textAlign: 'center',
     color: '#fff',

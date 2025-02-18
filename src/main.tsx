@@ -7,6 +7,7 @@ import { ReactKeycloakProvider } from '@react-keycloak/web'
 import keycloak from './keycloak.ts'
 import router from './routers/index.tsx'
 import { RouterProvider } from 'react-router-dom'
+import { StrictMode } from 'react'
 
 // const eventLogger = (event: any, error: any) => {
 //   // 'onReady' | 'onInitError' | 'onAuthSuccess' | 'onAuthError' | 'onAuthRefreshSuccess' | 'onAuthRefreshError' | 'onAuthLogout' | 'onTokenExpired'
@@ -69,7 +70,6 @@ import { RouterProvider } from 'react-router-dom'
 // }
 
 createRoot(document.getElementById('root')!).render(
-  // <StrictMode>
   <ReactKeycloakProvider
     initOptions={{
       onLoad: 'login-required', // check-sso || login-required
@@ -89,10 +89,11 @@ createRoot(document.getElementById('root')!).render(
         fontWeightStrong: 600,
       },
     }}>
-      <RouterProvider router={router} future={{
-        v7_startTransition: true,
-      }}/>
+      <StrictMode>
+        <RouterProvider router={router} future={{
+          v7_startTransition: true,
+        }} />
+      </StrictMode>
     </ConfigProvider>
   </ReactKeycloakProvider>
-  // </StrictMode>,
 )
