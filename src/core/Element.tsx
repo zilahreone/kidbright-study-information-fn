@@ -5,6 +5,17 @@ import FooterComponent from "./Footer";
 
 export default function ElementComponent({ hasHeader = true, hasFooter = true, children }: { hasHeader?: boolean, hasFooter?: boolean, children: JSX.Element }) {
 
+  const layoutStyle: React.CSSProperties = {
+    minHeight: '100vh',
+    borderRadius: 0,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    // backgroundColor: 'yellow',
+    // width: 'calc(50% - 8px)',
+    // minWidth: '500px',
+  };
+
   const headerStyle: React.CSSProperties = {
     padding: '0px 50px',
     // textAlign: 'center',
@@ -16,7 +27,8 @@ export default function ElementComponent({ hasHeader = true, hasFooter = true, c
   };
 
   const contentStyle: React.CSSProperties = {
-    minHeight: 'calc(100vh - (64px + 200px + 20px))', // Assuming footer height is 64px
+    // minHeight: 'calc(100vh - (64px + 200px + 20px))', // Assuming footer height is 64px
+    flexGrow: 1,
     // padding: `0px 100px 0px`,
     // borderColor: 'red'
     // textAlign: 'center',
@@ -32,14 +44,6 @@ export default function ElementComponent({ hasHeader = true, hasFooter = true, c
     // textAlign: 'center',
     color: '#fff',
     backgroundColor: '#4096ff',
-  };
-
-  const layoutStyle = {
-    borderRadius: 0,
-    overflow: 'hidden',
-    // backgroundColor: 'yellow',
-    // width: 'calc(50% - 8px)',
-    // minWidth: '500px',
   };
 
   return (

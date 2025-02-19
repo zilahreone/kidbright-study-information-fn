@@ -42,7 +42,7 @@ export default function CourseLanding() {
   }
 
   const institutesData: Institute[] = rawInstitutes as Institute[];
-  const institutes = institutesData.map((institute: Institute) => ({ ...institute, value: institute.instituteName }));
+  const institutes = institutesData.map((institute: Institute) => ({ ...institute, value: institute.instituteId, label: `${institute.instituteName} (${institute.district}, ${institute.province})` }));
 
   // const grades = ['ประถมศึกษา', 'มัธยมศึกษา', 'ปวช.', 'ปวส.', 'ปริญญาตรี', 'ปริญญาโท', 'ปริญญาเอก'];
   const grades = {
@@ -88,19 +88,21 @@ export default function CourseLanding() {
         })
         )
       }
+      // ===========================
       const fetchEnroll = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/user/${keycloak.tokenParsed?.sub}`, keycloak.token).catch((error) => {
         // alert('ไม่สามารถดึงข้อมูลการเรียนได้');
         console.error('ไม่สามารถดึงข้อมูลการเรียนได้', error);
       });
       if (fetchEnroll) {
-        // console.log(fetchEnroll);
+        console.log(fetchEnroll);
         if (fetchEnroll.course?.courseId === f?.courseKey) {
           setStudylDisabledForm(true);
         }
-        formStudy.setFieldsValue({ school: fetchEnroll.institute.instituteName, grade: fetchEnroll.grade, level: fetchEnroll.level, classRoom: fetchEnroll.classRoom });
+        // console.log(fetchEnroll.institute);
+        formStudy.setFieldsValue({ school: `${fetchEnroll.institute.instituteName} (${fetchEnroll.institute.district}, ${fetchEnroll.institute.province})`, grade: fetchEnroll.grade, level: fetchEnroll.level, classRoom: fetchEnroll.classRoom });
         setStudy(prev => ({
           ...prev,
-          school: fetchEnroll.institute.instituteName,
+          school: fetchEnroll.institute.instituteId,
           ...fetchEnroll
         }))
       }
@@ -111,11 +113,9 @@ export default function CourseLanding() {
   // const ins = useMemo(async () => {
   //   setTimeout(async () => {
   //     console.log('tt');
-
   //     // const ins = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/institute?instituteName=${study.school}`, keycloak.token);
   //     // console.log(ins);
   //   }, 1000);
-
   //   // const ins = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/institute?instituteName=${study.school}`, keycloak.token)
   //   // console.log(ins);
   // }, [study.school])
@@ -131,7 +131,7 @@ export default function CourseLanding() {
     }).catch((error) => {
       console.error(error);
     });
-    const institute = institutes.filter(ins => ins.value === study.school)[0]
+    // const institute = institutes.filter(ins => ins.value === study.school)[0]
     // const instituteId: Institute = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/institute/${institute.instituteId}`, keycloak.token).catch((error) => {
     //   console.error(error);
     // });
@@ -155,7 +155,7 @@ export default function CourseLanding() {
       ...(study.enrollId && { enrollId: study.enrollId }),
       userId: study.userId,
       courseId: study.subjectId,
-      instituteId: institute.instituteId,
+      instituteId: study.school,
       grade: study.grade,
       ...(study.level && { level: study.level }),
       ...(study.classRoom && { classRoom: study.classRoom })
@@ -169,6 +169,14 @@ export default function CourseLanding() {
 
   const handleEditStudyForm = (): void => {
     setStudylDisabledForm(false);
+  }
+
+  const handleSetFieldInstitute = (e: string) => {
+    setStudy({ ...study, school: e })
+    const ins = institutes.filter(ins => ins.instituteId === e)[0]
+    if (ins) {
+      formStudy.setFieldsValue({ school: `${ins?.instituteName} (${ins?.district}, ${ins?.province})` || e })
+    }
   }
 
   return (
@@ -219,10 +227,10 @@ export default function CourseLanding() {
               options={institutes}
               // options={ins}
               filterOption={
-                (inputValue, option) => option?.value.indexOf(inputValue) !== -1
+                (inputValue, option) => option?.instituteName.indexOf(inputValue) !== -1
               }
               // filterOption={(inputValue, option) => handleFilterOption(inputValue, option)}
-              onChange={(e) => setStudy({ ...study, school: e })}
+              onChange={(e) => handleSetFieldInstitute(e)}
             />
           </Form.Item>
 
