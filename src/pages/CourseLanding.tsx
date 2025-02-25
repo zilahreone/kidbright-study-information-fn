@@ -58,7 +58,7 @@ export default function CourseLanding() {
   const { Option } = Select;
   const [searchParams] = useSearchParams();
   const { keycloak } = useKeycloak();
-  const [studyDisabledForm, setStudylDisabledForm] = useState<boolean>(false);
+  const [studyDisabledForm, setStudyDisabledForm] = useState<boolean>(false);
 
   const [formStudy] = Form.useForm();
 
@@ -71,6 +71,8 @@ export default function CourseLanding() {
     level: undefined,
     classRoom: undefined
   });
+
+  const [existCourseId, setExistCourseId] = useState<boolean>(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,9 +96,10 @@ export default function CourseLanding() {
         console.error('ไม่สามารถดึงข้อมูลการเรียนได้', error);
       });
       if (fetchEnroll) {
-        console.log(fetchEnroll);
+        // console.log(fetchEnroll);
         if (fetchEnroll.course?.courseId === f?.courseKey) {
-          setStudylDisabledForm(true);
+          setExistCourseId(true)
+          setStudyDisabledForm(true);
         }
         // console.log(fetchEnroll.institute);
         formStudy.setFieldsValue({ school: `${fetchEnroll.institute.instituteName} (${fetchEnroll.institute.district}, ${fetchEnroll.institute.province})`, grade: fetchEnroll.grade, level: fetchEnroll.level, classRoom: fetchEnroll.classRoom });
@@ -131,27 +134,8 @@ export default function CourseLanding() {
     }).catch((error) => {
       console.error(error);
     });
-    // const institute = institutes.filter(ins => ins.value === study.school)[0]
-    // const instituteId: Institute = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/institute/${institute.instituteId}`, keycloak.token).catch((error) => {
-    //   console.error(error);
-    // });
-    // if (!instituteId) {
-    //   const { instituteId, instituteName, department, district, province } = institute;
-    //   await fetchAPI('POST', `${process.env.BASEURL}/api/kidbright/institute`, keycloak.token, {
-    //     instituteId,
-    //     instituteName,
-    //     department,
-    //     district,
-    //     province
-    //   } as Institute).catch((error) => {
-    //     console.error(error);
-    //   });
-    //   // console.log({instituteId, instituteName, department, district, province});
-    //   // console.log(instituteRes);
-    // }
-    // console.log(study.createAt);
 
-    await fetchAPI(study.createAt ? 'PATCH' : 'POST', `${process.env.BASEURL}/api/kidbright/enroll/${study.createAt ? study.enrollId : ''}`, keycloak.token, {
+    await fetchAPI(existCourseId ? 'PATCH' : 'POST', `${process.env.BASEURL}/api/kidbright/enroll/${existCourseId ? study.enrollId : ''}`, keycloak.token, {
       ...(study.enrollId && { enrollId: study.enrollId }),
       userId: study.userId,
       courseId: study.subjectId,
@@ -159,16 +143,21 @@ export default function CourseLanding() {
       grade: study.grade,
       ...(study.level && { level: study.level }),
       ...(study.classRoom && { classRoom: study.classRoom })
-    } as Enroll).then(() => {
+    } as Enroll).then((res) => {
       alert('บันทึกข้อมูลเรียบร้อย');
-      setStudylDisabledForm(true);
+      setStudy({
+        ...study,
+        ...res
+      })
+      setExistCourseId(true)
+      setStudyDisabledForm(true);
     }).catch((error) => {
       console.error(error);
     });
   }
 
   const handleEditStudyForm = (): void => {
-    setStudylDisabledForm(false);
+    setStudyDisabledForm(false);
   }
 
   const handleSetFieldInstitute = (e: string) => {

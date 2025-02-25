@@ -5,7 +5,6 @@ export default function Navbar() {
 
   enum RouterPath {
     HOME = '/',
-    COUSE_LANDING = '/course-landing',
     PROFILE = '/profile',
     COURSE = '/course',
     MANAGE = '/management',
@@ -18,14 +17,14 @@ export default function Navbar() {
 
   type Nav = {
     home: NavObject,
-    courseLanding?: NavObject,
+    course?: NavObject,
     profile: NavObject,
     manage?: NavObject
   }
 
   const navObj: Nav = {
     home: { name: 'Home', path: RouterPath.HOME },
-    courseLanding: {name: 'Course', path: RouterPath.COUSE_LANDING},
+    course: {name: 'Course', path: RouterPath.COURSE},
     profile: { name: 'Profile', path: RouterPath.PROFILE },
     manage: { name: 'Manage', path: RouterPath.MANAGE }
   }
