@@ -13,11 +13,12 @@ export default function CourseLanding() {
     enrollId?: string;
     createAt?: Date;
     id?: string;
-    userId: string | undefined;
-    subjectId: string | undefined;
-    subjectName: string | undefined;
-    school: string | undefined;
-    grade: string | undefined;
+    userId?: string;
+    subjectId?: string;
+    subjectName?: string;
+    school?: string;
+    studentId?: string;
+    grade?: string;
     level?: number;
     classRoom?: string;
     institute?: Institute;
@@ -37,7 +38,7 @@ export default function CourseLanding() {
     instituteId: string;
     grade: string;
     level?: number;
-    classRoom?: number;
+    classRoom?: string;
 
   }
 
@@ -62,15 +63,17 @@ export default function CourseLanding() {
 
   const [formStudy] = Form.useForm();
 
-  const [study, setStudy] = useState<Study>({
-    userId: undefined,
-    subjectId: undefined,
-    subjectName: undefined,
-    school: undefined,
-    grade: undefined,
-    level: undefined,
-    classRoom: undefined
-  });
+  const [study, setStudy] = useState<Study>()
+  // ({
+  //   userId: undefined,
+  //   subjectId: undefined,
+  //   subjectName: undefined,
+  //   school: undefined,
+  //   studentId: undefined,
+  //   grade: undefined,
+  //   level: undefined,
+  //   classRoom: undefined
+  // });
 
   const [existCourseId, setExistCourseId] = useState<boolean>(false)
 
@@ -102,7 +105,13 @@ export default function CourseLanding() {
           setStudyDisabledForm(true);
         }
         // console.log(fetchEnroll.institute);
-        formStudy.setFieldsValue({ school: `${fetchEnroll.institute.instituteName} (${fetchEnroll.institute.district}, ${fetchEnroll.institute.province})`, grade: fetchEnroll.grade, level: fetchEnroll.level, classRoom: fetchEnroll.classRoom });
+        formStudy.setFieldsValue({
+          school: `${fetchEnroll.institute.instituteName} (${fetchEnroll.institute.district}, ${fetchEnroll.institute.province})`,
+          studentId: fetchEnroll.studentId,
+          grade: fetchEnroll.grade,
+          level: fetchEnroll.level,
+          classRoom: fetchEnroll.classRoom
+        });
         setStudy(prev => ({
           ...prev,
           school: fetchEnroll.institute.instituteId,
@@ -129,20 +138,21 @@ export default function CourseLanding() {
     //   institutes.filter(ins => ins.value === study.school)[0]
     // );
     await fetchAPI('POST', `${process.env.BASEURL}/api/kidbright/course`, keycloak.token, {
-      courseId: study.subjectId,
-      courseName: study.subjectName
+      courseId: study?.subjectId,
+      courseName: study?.subjectName
     }).catch((error) => {
       console.error(error);
     });
 
-    await fetchAPI(existCourseId ? 'PATCH' : 'POST', `${process.env.BASEURL}/api/kidbright/enroll/${existCourseId ? study.enrollId : ''}`, keycloak.token, {
-      ...(study.enrollId && { enrollId: study.enrollId }),
-      userId: study.userId,
-      courseId: study.subjectId,
-      instituteId: study.school,
-      grade: study.grade,
-      ...(study.level && { level: study.level }),
-      ...(study.classRoom && { classRoom: study.classRoom })
+    await fetchAPI(existCourseId ? 'PATCH' : 'POST', `${process.env.BASEURL}/api/kidbright/enroll/${existCourseId ? study?.enrollId : ''}`, keycloak.token, {
+      ...(study?.enrollId && { enrollId: study?.enrollId }),
+      userId: study?.userId,
+      courseId: study?.subjectId,
+      instituteId: study?.school,
+      studentId: study?.studentId,
+      grade: study?.grade,
+      ...(study?.level && { level: study.level }),
+      ...(study?.classRoom && { classRoom: study.classRoom })
     } as Enroll).then((res) => {
       alert('บันทึกข้อมูลเรียบร้อย');
       setStudy({
@@ -222,7 +232,15 @@ export default function CourseLanding() {
               onChange={(e) => handleSetFieldInstitute(e)}
             />
           </Form.Item>
-
+          <Form.Item
+            label="รหัสนักเรียน"
+            name="studentId"
+          >
+            <Input
+              disabled={studyDisabledForm}
+              onInput={(e) => setStudy({ ...study, studentId: e.currentTarget.value })}
+            />
+          </Form.Item>
           <Form.Item
             label="ระดับชั้น"
             style={{ marginBottom: 16 }}
@@ -260,7 +278,7 @@ export default function CourseLanding() {
               style={{ display: 'inline-block', width: 'calc(34% - 8px)', margin: '0 8px' }}
             >
               <Select
-                disabled={studyDisabledForm || !['primary', 'secondary'].includes(study.grade || '')}
+                disabled={studyDisabledForm || !['primary', 'secondary'].includes(study?.grade || '')}
                 placeholder="ชั้น"
                 onChange={(e) => setStudy({ ...study, level: (e) })}
                 allowClear
@@ -288,7 +306,7 @@ export default function CourseLanding() {
               style={{ display: 'inline-block', width: 'calc(33% - 0px)', margin: '0 0px' }}
             >
               <Input
-                disabled={studyDisabledForm || !['primary', 'secondary'].includes(study.grade || '')}
+                disabled={studyDisabledForm || !['primary', 'secondary'].includes(study?.grade || '')}
                 allowClear
                 onChange={(e) => parseInt(e.target.value) > 0 && setStudy({ ...study, classRoom: e.target.value })}
                 placeholder='ห้อง' />

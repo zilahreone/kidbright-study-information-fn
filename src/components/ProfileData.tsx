@@ -22,7 +22,6 @@ export default function ProfileData({
     lastName?: string;
     email?: string;
     birthdate?: string;
-    studentId?: string;
   }
 
   const { keycloak } = useKeycloak();
@@ -70,7 +69,7 @@ export default function ProfileData({
         }
       });
       if (fetchUser) {
-        formProfile.setFieldsValue({ firstname: fetchUser.firstName, lastname: fetchUser.lastName, studentId: fetchUser.studentId, birthdate: dayjs(fetchUser.birthdate || '') });
+        formProfile.setFieldsValue({ firstname: fetchUser.firstName, lastname: fetchUser.lastName, birthdate: dayjs(fetchUser.birthdate || '') });
         setProfile(fetchUser);
         setProfileDisabledForm(true);
       }
@@ -114,16 +113,6 @@ export default function ProfileData({
           <Input
             disabled={profileDisabledForm}
             onInput={(e) => setProfile({ ...profile, lastName: e.currentTarget.value })}
-          />
-        </Form.Item>
-        <Form.Item
-          label="รหัสนักเรียน"
-          name="studentId"
-          rules={[{ required: true, message: 'กรุณาระบุ นามสกุล' }]}
-        >
-          <Input
-            disabled={profileDisabledForm}
-            onInput={(e) => setProfile({ ...profile, studentId: e.currentTarget.value })}
           />
         </Form.Item>
         <Form.Item
