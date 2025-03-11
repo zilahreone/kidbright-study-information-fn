@@ -4,6 +4,7 @@ import Title from "antd/es/typography/Title";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { fetchAPI } from "../utils";
+import utc from 'dayjs/plugin/utc'
 
 export default function ProfileData({
   titleLevel = 3,
@@ -24,6 +25,7 @@ export default function ProfileData({
     birthdate?: string;
   }
 
+  dayjs.extend(utc);
   const { keycloak } = useKeycloak();
   const [formProfile] = Form.useForm();
   const [profileDisabledForm, setProfileDisabledForm] = useState<boolean>(false);
@@ -69,12 +71,12 @@ export default function ProfileData({
         }
       });
       if (fetchUser) {
-        formProfile.setFieldsValue({ firstname: fetchUser.firstName, lastname: fetchUser.lastName, birthdate: dayjs(fetchUser.birthdate || '') });
+        formProfile.setFieldsValue({ firstname: fetchUser.firstName, lastname: fetchUser.lastName, birthdate: dayjs.utc(fetchUser.birthdate || '').utcOffset(-7) });
         setProfile(fetchUser);
         setProfileDisabledForm(true);
       }
       // delete user.birthdate
-      // console.log(fetchUser);
+      console.log(fetchUser);
     }
     fetchUser();
     // return () => {

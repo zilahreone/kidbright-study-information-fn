@@ -24,7 +24,7 @@ export default function Navbar() {
 
   const navObj: Nav = {
     home: { name: 'Home', path: RouterPath.HOME },
-    course: {name: 'Course', path: RouterPath.COURSE},
+    course: { name: 'Course', path: RouterPath.COURSE },
     profile: { name: 'Profile', path: RouterPath.PROFILE },
     manage: { name: 'Manage', path: RouterPath.MANAGE }
   }
@@ -70,16 +70,18 @@ export default function Navbar() {
         {
           Object.entries(navObj).map(([key, value]) => (
             <NavLink
-              style={{color: '#fff2f0'}}
               key={key}
               to={value.path}
-              className={({ isActive, isPending, isTransitioning }) =>
-                [
-                  isPending ? "pending" : "",
-                  isActive ? "active" : "",
-                  isTransitioning ? "transitioning" : "",
-                ].join(" ")
-              }
+              style={({ isActive }) => {
+                return isActive ? { color: "#E07A5F" } : { color: "#FFF" };
+              }}
+            // className={({ isActive, isPending, isTransitioning }) =>
+            //   [
+            //     isPending ? "pending" : "",
+            //     isActive ? "red" : "text-black",
+            //     isTransitioning ? "transitioning" : "",
+            //   ].join(" ")
+            // }
             >
               {value.name}
             </NavLink>

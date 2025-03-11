@@ -79,7 +79,7 @@ export default function CourseLanding() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const f = await fetchAPI('GET', `${process.env.LMSURL}/${searchParams.get('usageId')}`).catch((error) => {
+      const f = await fetchAPI('GET', `${process.env.LMSURL}/${searchParams.get('usageId')}`, keycloak.token).catch((error) => {
         // alert('ไม่สามารถดึงข้อมูลวิชาได้');
         console.error('"usageId" ไม่สามารถเรียกขอมูลวิชาได้', error);
       });

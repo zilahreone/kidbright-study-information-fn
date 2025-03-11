@@ -23,13 +23,13 @@ export default function ElementComponent({ hasHeader = true, hasFooter = true, c
     height: 64,
     // paddingInline: 48,
     lineHeight: '64px',
-    backgroundColor: '#4096ff',
+    backgroundColor: '#3D405B',
   };
 
   const contentStyle: React.CSSProperties = {
     // minHeight: 'calc(100vh - (64px + 200px + 20px))', // Assuming footer height is 64px
     flexGrow: 1,
-    // padding: `0px 100px 0px`,
+    padding: `30px 0px 30px`,
     // borderColor: 'red'
     // textAlign: 'center',
     // minHeight: 'calc(100%)',
@@ -42,8 +42,8 @@ export default function ElementComponent({ hasHeader = true, hasFooter = true, c
     marginTop: '20px',
     height: '200px',
     // textAlign: 'center',
-    color: '#fff',
-    backgroundColor: '#4096ff',
+    color: '#ffffff',
+    backgroundColor: '#3D405B',
   };
 
   return (

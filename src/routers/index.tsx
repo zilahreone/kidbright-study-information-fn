@@ -1,6 +1,7 @@
 import ElementComponent from "../core/Element";
 import Course from "../pages/Course";
 import CourseLanding from "../pages/CourseLanding";
+import Home from "../pages/Home";
 import Management from "../pages/Manage";
 import Profile from "../pages/Profile";
 import { createBrowserRouter } from "react-router-dom";
@@ -15,7 +16,7 @@ enum RouterPath {
 }
 
 const Element = {
-  HOME: <>HOME</>,
+  HOME: <Home />,
   COURSE: <Course />,
   COURSE_LANDING: <CourseLanding />,
   PROFILE: <Profile />,
