@@ -5,10 +5,20 @@ import './index.css'
 import { ConfigProvider, theme } from 'antd'
 import { ReactKeycloakProvider } from '@react-keycloak/web'
 import keycloak from './keycloak.ts'
-import router from './routers/index.tsx'
-import { RouterProvider } from 'react-router-dom'
 import { StrictMode } from 'react'
+import AuthRole from './components/AuthRole.tsx'
+// import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+// import useStore from './utils/store.ts'
 
+// const handeElvent = (eventType: AuthClientEvent) => {
+//   // const { setRole } = useStore()
+//   if (eventType === 'onReady') {
+//     fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/user/${keycloak.tokenParsed?.sub}`, keycloak.token).then((res) => {
+//       // console.log(res.role);
+//       // setRole(res.role);
+//     })
+//   }
+// }
 // const eventLogger = (event: any, error: any) => {
 //   // 'onReady' | 'onInitError' | 'onAuthSuccess' | 'onAuthError' | 'onAuthRefreshSuccess' | 'onAuthRefreshError' | 'onAuthLogout' | 'onTokenExpired'
 //   // console.log('onKeycloakEvent', event, error)
@@ -77,7 +87,7 @@ createRoot(document.getElementById('root')!).render(
     }}
     authClient={keycloak}
     LoadingComponent={<>Loading...</>}
-    // onEvent={eventLogger}
+    // onEvent={handeElvent}
     // onTokens={tokenLogger}
     autoRefreshToken
   >
@@ -90,9 +100,12 @@ createRoot(document.getElementById('root')!).render(
       },
     }}>
       <StrictMode>
-        <RouterProvider router={router} future={{
-          v7_startTransition: true,
-        }} />
+      <AuthRole />
+        {/* <AuthRole router={(r) => handleRouter(r)}>
+          <RouterProvider router={router} future={{
+            v7_startTransition: true,
+          }} />
+        </AuthRole> */}
       </StrictMode>
     </ConfigProvider>
   </ReactKeycloakProvider>

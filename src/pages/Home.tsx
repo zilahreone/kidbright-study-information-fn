@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { fetchAPI } from "../utils"
 import { useKeycloak } from "@react-keycloak/web";
-import { Card, Col, DatePicker, Flex, Row, Select, Skeleton, Table, TimeRangePickerProps, Typography } from "antd";
+import { AutoComplete, AutoCompleteProps, Button, Card, Col, DatePicker, Empty, Flex, Input, Radio, Row, Select, Skeleton, TimeRangePickerProps } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import utc from 'dayjs/plugin/utc';
 import Title from "antd/es/typography/Title";
-import Search from "antd/es/input/Search";
+import LongdoMap from "../components/LongdoMap";
+import { HomeOutlined, UserOutlined } from "@ant-design/icons";
+import InfiniteScroll from "react-infinite-scroll-component";
+import InstituteEnrollTable from "../components/InstituteEnrollTable";
 // import useInfiniteScroll from "../utils/useInfiniteScroll";
 
 type Course = {
@@ -15,23 +18,24 @@ type Course = {
   updateAt: string;
 };
 
-type Institute = {
-  province: string
-  district: string
-  department: string
-  instituteName: string
-  instituteId: string
-};
+// type Institute = {
+//   province: string
+//   district: string
+//   department: string
+//   instituteName: string
+//   instituteId: string
+//   coordinates: string;
+// };
 
 type User = {
-  userId?: string;
-  userName?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  birthdate?: string;
-  createAt?: string;
-  updateAt?: string;
+  userId: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  birthdate: string;
+  createAt: string;
+  updateAt: string;
 };
 
 type Query = {
@@ -43,18 +47,45 @@ type Query = {
   dateTo?: string;
 };
 
-type Enroll = {
-  enrollId?: string;
-  studentId?: string;
-  grade?: string;
-  level?: string;
-  classRoom?: string;
-  createAt?: string;
-  updateAt?: string;
-  user?: User;
-  course?: Course;
-  institute?: Institute;
-};
+// type Enroll = {
+//   enrollId?: string;
+//   studentId?: string;
+//   grade?: string;
+//   level?: string;
+//   classRoom?: string;
+//   createAt?: string;
+//   updateAt?: string;
+//   user?: User;
+//   course?: Course;
+//   institute?: Institute;
+// };
+
+type ScrollOptions = {
+  take: number;
+  skip: number;
+  hasEnd: boolean;
+}
+
+type ResponseInstitute = {
+  province: string
+  district: string
+  department: string
+  instituteName: string
+  instituteId: string
+  coordinates: { lat: number, long: number };
+  createAt: string;
+  updateAt: string;
+  // user?: User;
+  courses: {
+    courseId: string;
+    courseName: string;
+    users: (User & {
+      enrollCreateAt: string;
+      enrollUpdateAt: string;
+    })[];
+  }[];
+  userEnrollCount: number;
+}
 
 const titleStyle: React.CSSProperties = {
   margin: '0px 0px 14px'
@@ -66,35 +97,85 @@ export default function Home() {
   const { keycloak } = useKeycloak();
   const [query, setQuery] = useState<Query>();
   const [courses, setCourses] = useState<Course[]>();
-  const [enrolls, setEnrolls] = useState<Enroll[]>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [institutes, setInstitutes] = useState<ResponseInstitute[]>();
+  const [institutesLocation, setInstitutesLocation] = useState<ResponseInstitute[]>();
+  const [instituteCount, setInstituteCount] = useState<number>(0);
+  // const [isLoading, setIsLoading] = useState<boolean>(false);
   const [search, setSearch] = useState<string>();
+  // const [timer, setTimer] = useState<NodeJS.Timeout>()
+  const [position, setPosition] = useState<'table' | 'map'>('map');
+  const [options, setOptions] = useState<AutoCompleteProps['options']>([]);
   // const [timer, setTimer] = useState<NodeJS.Timeout>();
   // const [institutes, setInstitutes] = useState<Institute[]>();
   // const [isFetching, setIsFetching] = useInfiniteScroll(fetchMoreListItems);
+  const [scrollOptions, setScrollOptions] = useState<ScrollOptions>({ take: 200, skip: 0, hasEnd: false });
+  const [userCount, setUserCount] = useState<number>(0);
 
-  // function fetchMoreListItems() {
-  //   console.log('fetch');
-  //   setTimeout(() => {
-  //     // setListItems(prevState => ([...prevState, ...Array.from(Array(20).keys(), n => n + prevState.length + 1)]));
-  //     setIsFetching(false);
-  //   }, 2000);
-  // }
+  useEffect(() => {
+    const fetchInstituteCount = async (queryString?: string) => {
+      const count = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes/count?${queryString}`, keycloak.token);
+      setInstituteCount(count);
+      console.log('count ' + count);
+    }
+    const fetchCourses = async () => {
+      const courses: Course[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/courses?order=ASC`, keycloak.token);
+      // console.log(courses);
+      if (courses) {
+        setCourses(courses);
+      }
+    }
+    const fetchInstitutesLocation = async (queryString?: string) => {
+      // &take=-1&skip=-1
+      const institutesLocation: ResponseInstitute[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}&take=-1&skip=-1`, keycloak.token);
+      setInstitutesLocation(institutesLocation);
+    }
+    const fetchInstitutes = async (queryString?: string) => {
+      // &take=-1&skip=-1
+      const institutes: ResponseInstitute[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}`, keycloak.token);
+      const hasEnd = institutes.length < scrollOptions.take;
+      setScrollOptions({ ...scrollOptions, hasEnd });
+      setInstitutes(institutes);
+      setUserCount(institutes.reduce((prev, institute) => prev += institute.userEnrollCount, 0));
+    }
+    const queryString = handleQueryString();
+    fetchInstituteCount(queryString);
+    fetchCourses();
+    if (query?.dateTo && query.dateFrom) {
+      fetchInstitutesLocation(queryString)
+      fetchInstitutes(queryString);
+    } else {
+      setInstitutesLocation([]);
+      setInstitutes([]);
+    }
 
-  // const handleSetInstitute = async (value: string) => {
-  //   clearTimeout(timer)
-  //   const newTimer = setTimeout(async () => {
-  //     await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/institute?instituteName=${value}`, keycloak.token).then((res: Institute[]) => {
-  //       if (res.length > 0) setInstitutes(res.map(institute => ({ ...institute, value: institute.instituteId, label: `${institute.instituteName} (${institute.district}, ${institute.province})` })))
-  //     })
-  //   }, 1500)
-  //   setTimer(newTimer)
-  //   const institute = institutes?.filter(ins => ins.instituteId === value)[0];
-  //   // if (institute) {
-  //   //   setQuery({ ...query, institute: institute.instituteName, instituteId: institute.instituteId })
-  //   // }
-  //   setQuery({ ...query, institute: institute ? `${institute.instituteName} (${institute.district}, ${institute.province})` : value, instituteId: institute?.instituteId })
-  // }
+  }, [query]);
+
+  const handleQueryString = () => {
+    let queryString = '';
+    if (query) {
+      if (query.dateFrom && query.dateTo) {
+        queryString += `createAt=${query.dateFrom},${query.dateTo}&`;
+      }
+      if (query.courseId) {
+        queryString += `courseId=${encodeURIComponent(query.courseId)}&`;
+      }
+    }
+    return queryString;
+  }
+
+  const fetchMoreData = () => {
+    if ((institutes?.length || 0) < instituteCount) {
+      const queryString = handleQueryString();
+      const skip = scrollOptions.skip + scrollOptions.take;
+      fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}&take=${scrollOptions.take}&skip=${skip}`, keycloak.token).then((res: ResponseInstitute[]) => {
+        setScrollOptions({ ...scrollOptions, skip });
+        setInstitutes((prev) => ([...(prev || []), ...res]))
+        setUserCount(res.reduce((prev, institute) => prev += institute.userEnrollCount, userCount));
+      });
+    } else {
+      setScrollOptions((prev) => ({ ...prev, hasEnd: true }));
+    }
+  }
 
   const onRangeChange = (dates: null | (Dayjs | null)[], dateStrings: string[]) => {
     if (dates) {
@@ -124,138 +205,158 @@ export default function Home() {
     } else {
       setQuery({ ...query, courseId: undefined, course: undefined })
     }
-    setIsLoading(true);
+    // setIsLoading(true);
+  }
+  // const onSearch = (e: string) => {
+  //   clearTimeout(timer);
+  //   const newTimer = setTimeout(() => {
+  //     setSearch(e.trim());
+  //   }, 1500);
+  //   setTimer(newTimer);
+  // };
+
+  const searchResult = (query: string) => {
+    const search = query.trim();
+    // if (!query) setSearch('');
+    return institutes?.filter(rEnroll => {
+      if (
+        rEnroll.instituteName?.includes(search) ||
+        rEnroll.courses?.some(course => course.users?.some(user => user.firstName.includes(search) || user.lastName.includes(search) || user.email.includes(search)))
+      ) {
+        return rEnroll;
+      }
+    }).map((mEnroll) => ({
+      value: `${mEnroll.instituteName}`,
+      label: (
+        <>
+          <Flex vertical>
+            <Flex align="center" gap={'small'}>
+              <HomeOutlined /> {mEnroll.instituteName}
+            </Flex>
+
+            {
+              mEnroll.courses.reduce((pCourse, course) => {
+                course.users.forEach(user => {
+                  if (user.firstName.includes(search) || user.lastName.includes(search)) {
+                    pCourse = (
+                      <Flex align="center" gap={'small'}>
+                        <UserOutlined /> {user.firstName} {user.lastName}
+                      </Flex>
+                    )
+                  }
+                });
+                return pCourse;
+              }, <></>)
+            }
+          </Flex>
+        </>
+      )
+    }))
+  };
+
+  const handleDLF = () => {
+    const queryString = handleQueryString();
+    fetch(`${process.env.BASEURL}/api/kidbright/enroll/institutes/download?${queryString}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${keycloak.token}`,
+        'Content-Type': 'text/csv;charset=utf-8,',
+      },
+    }).then((res) => {
+      res.text().then((text) => {
+        const csv = "\ufeff" + text;
+        const blob = new Blob([csv], { type: "text/csv;charset=UTF-8" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'enrolls.csv';
+        a.click();
+      });
+    });
   }
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/course`, keycloak.token).then((res: Course[]) => {
-        setCourses(res);
-      });
-    }
-    const fetchEnrolls = async (queryString?: string) => {
-      await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll${queryString && queryString}`, keycloak.token).then((res: Enroll[]) => {
-        setEnrolls(res);
-      });
-    }
-    if (query) {
-      let queryString = '?';
-      if (query.dateFrom && query.dateTo) {
-        queryString += `createAt=${query.dateFrom},${query.dateTo}&`;
-      }
-      if (query.courseId) {
-        queryString += `courseId=${encodeURIComponent(query.courseId)}&`;
-      }
-      fetchEnrolls(queryString);
-    } else {
-      fetchCourses();
-    }
-  }, [query]);
-
-  const memoEnrolls = useMemo(() => {
-    type EnrollCreatedUpdated = {
-      enrollCreateAt?: string;
-      enrollUpdateAt?: string;
-    }
-    type Course = {
-      courseId?: string;
-      courseName?: string;
-      users?: Array<User & EnrollCreatedUpdated>;
-    };
-    type PrevEnroll = {
-      enrollId?: string;
-      instituteId?: string;
-      instituteName?: string;
-      courses?: Course[];
-    }
-    const reduceEnrolls = enrolls?.reduce((prev: PrevEnroll[], enroll: Enroll) => {
-      const enrollObj: PrevEnroll = {
-        enrollId: enroll.enrollId,
-        instituteId: enroll.institute?.instituteId,
-        instituteName: enroll.institute?.instituteName,
-        courses: [] as Course[],
-      }
-      const courseObj: Course = {
-        courseId: enroll.course?.courseId,
-        courseName: enroll.course?.courseName,
-        users: [] as User[] & EnrollCreatedUpdated
-      };
-      const userObj: User & EnrollCreatedUpdated = {
-        userId: enroll.user?.userId,
-        userName: enroll.user?.userName,
-        firstName: enroll.user?.firstName,
-        lastName: enroll.user?.lastName,
-        email: enroll.user?.email,
-        birthdate: enroll.user?.birthdate,
-        enrollCreateAt: enroll.createAt,
-        enrollUpdateAt: enroll.updateAt
-      };
-      if (!prev.some((enrollItem) => enrollItem.instituteId === enroll.institute?.instituteId)) {
-        courseObj.users?.push(userObj);
-        enrollObj.courses?.push(courseObj);
-        prev.push(enrollObj);
-      } else {
-        let instituteIndex = prev.findIndex((enrollItem) => enrollItem.instituteId === enroll.institute?.instituteId);
-        if (prev[instituteIndex].courses && !prev[instituteIndex].courses.some((courseItem) => courseItem.courseId === enroll.course?.courseId)) {
-          courseObj.users?.push(userObj);
-          prev[instituteIndex].courses.push(courseObj);
-        } else {
-          let courseIndex = prev[instituteIndex].courses?.findIndex((courseItem) => courseItem.courseId === enroll.course?.courseId) ?? -1;
-          // if (prev[instituteIndex].courses && prev[instituteIndex].courses[courseIndex]) {
-          if (prev[instituteIndex].courses && !prev[instituteIndex].courses[courseIndex].users?.some((user) => user.userId === enroll.user?.userId)) {
-            prev[instituteIndex].courses[courseIndex].users?.push(userObj);
-          }
-        }
-      }
-      return prev;
-    }, [] as PrevEnroll[]);
+  const memoInstitutes = useMemo(() => {
     if (search) {
-      return reduceEnrolls?.filter(rEnroll => {
-        if (rEnroll.instituteName?.includes(search) || rEnroll.courses?.some(course => course.users?.some(user => [ user.userName, user.firstName, user.firstName, user.email].includes(search)))) {
-          return rEnroll;
+      setScrollOptions((prev) => ({ ...prev, hasEnd: true }));
+      return institutes?.filter(ins => ins.instituteName.includes(search || ''));
+    }
+    setScrollOptions((prev) => ({ ...prev, hasEnd: institutes?.length === instituteCount }));
+    return institutes;
+  }, [search, institutes]);
+
+  const dataSourceLocation = useMemo(() => {
+    if (Array.isArray(institutesLocation)) {
+      const memoIns = institutesLocation.map((ins, insIndex) => {
+        return {
+          key: `${ins.instituteId}-${insIndex}`,
+          instituteId: ins.instituteId,
+          instituteName: ins.instituteName,
+          coordinates: {
+            lat: ins.coordinates.lat,
+            long: ins.coordinates.long,
+          },
+          courses: ins.courses.map((course, index) => ({
+            key: `${ins.instituteId}-${index}`,
+            courseId: course.courseId,
+            courseName: course.courseName,
+            users: course.users.map((user, userIndex) => ({
+              key: `${ins.instituteId}-user-${userIndex}-${user.userId}`,
+              userId: user.userId,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              enrollCreateAt: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
+            }))
+          }))
         }
       })
+      return memoIns;
     }
-    return reduceEnrolls;
-  }, [enrolls, search]);
+    return [];
+  }, [institutesLocation]);
 
-  const memoCount = useMemo(() => {
-    setIsLoading(false);
-    return memoEnrolls?.reduce((prev, enroll) => {
-      return prev + (enroll.courses ?? []).reduce((prevCourse, course) => {
-        return prevCourse + (course.users ? course.users.length : 0);
-      }, 0);
-    }, 0);
-  }, [memoEnrolls]);
-
-  const onSearch = (e: string) => {
-    setSearch(e.trim());
-  }
+  const dataSource = useMemo(() => {
+    if (Array.isArray(memoInstitutes)) {
+      const memoIns = memoInstitutes.map((ins, insIndex) => {
+        return {
+          key: `${ins.instituteId}-${insIndex}`,
+          instituteId: ins.instituteId,
+          instituteName: ins.instituteName,
+          coordinates: {
+            lat: ins.coordinates.lat,
+            long: ins.coordinates.long,
+          },
+          courses: ins.courses.map((course, index) => ({
+            key: `${ins.instituteId}-${index}`,
+            courseId: course.courseId,
+            courseName: course.courseName,
+            users: course.users.map((user, userIndex) => ({
+              key: `${ins.instituteId}-user-${userIndex}-${user.userId}`,
+              userId: user.userId,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              enrollCreateAt: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
+            }))
+          }))
+        }
+      })
+      // setIsLoading(false)
+      return memoIns;
+    }
+    return [];
+  }, [memoInstitutes]);
 
   return (
     <>
       <Flex vertical gap={'middle'}>
-        <Row gutter={[16, 16]}>
-          <Col span={16}>
-            <Card style={{ height: '150px' }}>
-              <Title style={titleStyle} level={4}>ค้นหา</Title>
-              <Search placeholder="ค้นหา ชื่อ หรือ โรงเรียน และอื่นๆ" allowClear onSearch={onSearch} />
-            </Card>
-          </Col>
-          <Col span={8}>
-            <Card style={{ height: '150px' }}>
-              <Title style={titleStyle} level={4}>จำนวนผู้ลงทะเบียน</Title>
-              <Title style={{ ...titleStyle, textAlign: 'end' }} level={3}>{memoCount}</Title>
-            </Card>
-          </Col>
-        </Row>
         {/* <AutoComplete
-          value={query?.institute}
-          placeholder={'กรุณราเลือกโรงเรียน'}
-          style={{ width: '40%' }}
-          options={institutes}
-          onChange={(e) => handleSetInstitute(e)}
-        /> */}
+      value={query?.institute}
+      placeholder={'กรุณราเลือกโรงเรียน'}
+      style={{ width: '40%' }}
+      options={institutes}
+      onChange={(e) => handleSetInstitute(e)}
+    /> */}
         <Row gutter={[16, 16]}>
           <Col span={8}>
             <RangePicker style={{ width: '100%' }} presets={rangePresets} onChange={onRangeChange} />
@@ -271,57 +372,65 @@ export default function Home() {
             />
           </Col>
         </Row>
+        <Row gutter={[16, 16]}>
+          <Col span={16}>
+            <Card style={{ height: '150px' }}>
+              <Title style={titleStyle} level={4}>ค้นหา</Title>
+              <AutoComplete
+                disabled={institutes?.length === 0}
+                style={{ width: '100%' }}
+                options={options}
+                onChange={(e) => !e && setSearch('')}
+                onSelect={(value) => setSearch(value)}
+                onSearch={(value) => setOptions(value ? searchResult(value) : [])}
+              >
+                {search}
+                <Input.Search placeholder="ค้นหา ชื่อ นามสกุล หรือ โรงเรียน" enterButton />
+              </AutoComplete>
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card style={{ height: '150px' }}>
+              <Title style={titleStyle} level={4}>จำนวนผู้ลงทะเบียน</Title>
+              {/* <Title style={{ ...titleStyle, textAlign: 'end' }} level={3}>{institutes?.length}</Title> */}
+              <Title style={{ ...titleStyle, textAlign: 'end' }} level={3}>{userCount}</Title>
+            </Card>
+          </Col>
+        </Row>
+        <Flex justify="space-between" gap={'small'} style={{ width: '100%' }}>
+          <Radio.Group disabled={institutes?.length === 0} value={position} onChange={(e) => { setPosition(e.target.value) }}>
+            <Radio.Button value="table">Table</Radio.Button>
+            <Radio.Button value="map">Map</Radio.Button>
+          </Radio.Group>
+          <Button disabled={institutes?.length === 0} style={{ backgroundColor: "#81B29A", color: "#fff" }} onClick={() => handleDLF()}>ดาวน์โหลดข้อมูลทั้งหมด</Button>
+        </Flex>
         {
-          isLoading
-            ? Array.from({ length: 4 }).map((_, skeIndex) => <Skeleton key={`skeleton-${skeIndex}`} active />)
-            : memoEnrolls?.map((mEnroll, eIndex) => {
-              return (
-                <Card key={`eEnroll-${eIndex}`} title={`โรงเรียน : ${mEnroll.instituteName}`}>
-                  <Flex vertical gap={'middle'}>
-                    {
-                      mEnroll.courses?.map((mCourse, cIndex) => {
-                        return (
-                          <Card key={`eCourse-${cIndex}`} type="inner" title={`วิชา : ${mCourse.courseName}`}>
-                            <Table
-                              pagination={false}
-                              // className={styles.customTable}
-                              columns={[
-                                // { title: 'Id', dataIndex: 'userId' },
-                                { title: 'ชื่อ', dataIndex: 'userName' },
-                                { title: 'ชื่อจริง', dataIndex: 'firstName' },
-                                { title: 'นามสกุล', dataIndex: 'lastName' },
-                                { title: 'Email', dataIndex: 'email' },
-                                // { title: 'วันเกิด', dataIndex: 'birthdate' },
-                                { title: 'เวลาลงทะเบียน', dataIndex: 'enrollCreated' },
-                                // { title: 'เวลาอัพเดทข้อมูล', dataIndex: 'enrollUpdated' }
-                              ]}
-                              dataSource={mCourse.users?.map((user, index) => ({
-                                key: `user-${index}-${user.userId}`,
-                                ...user,
-                                // birthdate: dayjs(user.birthdate).utcOffset(-1).format('DD MMMM YYYY'),
-                                // birthdate: dayjs(user.birthdate).utcOffset(-1).format('DD MMMM YYYY HH:mm:ss'),
-                                enrollCreated: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
-                                // enrollUpdated: dayjs(mEnroll.updateAt).format('DD MMMM YYYY HH:mm:ss')
-                              }))}
-                            // scroll={{ y: 300 }}
-                            />
-                          </Card>
-                        )
-                      })
-                    }
-                  </Flex>
-                </Card>
-                // <div key={mEnroll.instituteId}>
-                //   <h1>{mEnroll.instituteName}</h1>
+          (institutes?.length ?? 0) > 0
+            ? (
+              <InfiniteScroll
+                dataLength={institutes?.length ?? 0}
+                next={fetchMoreData}
+                hasMore={!scrollOptions.hasEnd}
+                loader={Array.from({ length: 4 }).map((_, skeIndex) => <Skeleton key={`skeleton-${skeIndex}`} active />)}
+              >
+                {
+                  position === 'table' ? <InstituteEnrollTable institute={dataSource || []} /> : <LongdoMap institutes={dataSourceLocation || []} />
+                }
+              </InfiniteScroll>
+            )
+            : (
+              <Flex vertical justify="center" style={{ height: '400px' }}>
+                <Empty description={!query?.dateFrom && !query?.dateTo ? "กรุณาเลือก 'ช่วงวันที่' ในการค้นหา" : institutes?.length === 0 ? "ไม่พบข้อมูลที่ค้นหา" : undefined} />
+              </Flex>
 
-                // </div>
-              )
-            })
+            )
         }
+
       </Flex>
       {/* <pre> {JSON.stringify(courses, null, 2)} </pre > */}
       {/* <pre> {JSON.stringify(enrolls, null, 2)} </pre > */}
       {/* <pre> {JSON.stringify(query, null, 2)} </pre > */}
+      {/* <pre> {JSON.stringify(memoEnrolls?.filter(e => e.coordinates.lat === 0), null, 2)} </pre > */}
       {/* <pre> {JSON.stringify(memoEnrolls, null, 2)} </pre > */}
     </>
   )

@@ -1,32 +1,37 @@
 import { Flex } from "antd";
 import { NavLink } from "react-router-dom";
+import useStore from "../utils/store";
+import { useKeycloak } from "@react-keycloak/web";
+
+enum RouterPath {
+  HOME = '/',
+  PROFILE = '/profile',
+  COURSE = '/course',
+  MANAGE = '/management',
+}
+
+type NavObject = {
+  name: string,
+  path: string
+}
+
+type Nav = {
+  home: NavObject,
+  course?: NavObject,
+  profile: NavObject,
+  manage?: NavObject
+}
 
 export default function Navbar() {
 
-  enum RouterPath {
-    HOME = '/',
-    PROFILE = '/profile',
-    COURSE = '/course',
-    MANAGE = '/management',
-  }
-
-  type NavObject = {
-    name: string,
-    path: string
-  }
-
-  type Nav = {
-    home: NavObject,
-    course?: NavObject,
-    profile: NavObject,
-    manage?: NavObject
-  }
+  const { keycloak } = useKeycloak();
+  const { isRole } = useStore();
 
   const navObj: Nav = {
     home: { name: 'Home', path: RouterPath.HOME },
     course: { name: 'Course', path: RouterPath.COURSE },
     profile: { name: 'Profile', path: RouterPath.PROFILE },
-    manage: { name: 'Manage', path: RouterPath.MANAGE }
+    ...(isRole === 'admin' ? { manage: { name: 'Manage', path: RouterPath.MANAGE } } : {}),
   }
 
   // const items: MenuProps['items'] = [
@@ -88,7 +93,7 @@ export default function Navbar() {
           ))
         }
       </Flex>
-      <div></div>
+      <NavLink to="#" style={{ color: "#FFF" }} onClick={() => keycloak.logout()}>Logout</NavLink>
       {/* <Dropdown menu={{ items }} trigger={['click']}>
         <a onClick={(e) => e.preventDefault()}>
           <Space>
