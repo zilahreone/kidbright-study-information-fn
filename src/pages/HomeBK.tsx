@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { fetchAPI } from "../utils"
 import { useKeycloak } from "@react-keycloak/web";
-import { AutoComplete, AutoCompleteProps, Button, Card, Col, DatePicker, Empty, Flex, Input, Radio, Row, Select, Skeleton, Spin, TimeRangePickerProps } from "antd";
+import { AutoComplete, AutoCompleteProps, Button, Card, Col, DatePicker, Empty, Flex, Input, Radio, Row, Select, Skeleton, TimeRangePickerProps } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import utc from 'dayjs/plugin/utc';
 import Title from "antd/es/typography/Title";
-// import LongdoMap from "../components/LongdoMap";
+import LongdoMap from "../components/LongdoMap";
 import { HomeOutlined, UserOutlined } from "@ant-design/icons";
 import InfiniteScroll from "react-infinite-scroll-component";
 import InstituteEnrollTable from "../components/InstituteEnrollTable";
-import MapRender from "../components/MapRender";
 // import useInfiniteScroll from "../utils/useInfiniteScroll";
 
 type Course = {
@@ -80,7 +79,6 @@ type ResponseInstitute = {
   courses: {
     courseId: string;
     courseName: string;
-    userCount: number,
     users: (User & {
       enrollCreateAt: string;
       enrollUpdateAt: string;
@@ -99,10 +97,10 @@ export default function Home() {
   const { keycloak } = useKeycloak();
   const [query, setQuery] = useState<Query>();
   const [courses, setCourses] = useState<Course[]>();
-  const [institutes, setInstitutes] = useState<ResponseInstitute[]>([]);
-  const [institutesAll, setInstitutesAll] = useState<ResponseInstitute[]>([]);
+  const [institutes, setInstitutes] = useState<ResponseInstitute[]>();
+  const [institutesLocation, setInstitutesLocation] = useState<ResponseInstitute[]>();
   const [instituteCount, setInstituteCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // const [isLoading, setIsLoading] = useState<boolean>(false);
   const [search, setSearch] = useState<string>();
   // const [timer, setTimer] = useState<NodeJS.Timeout>()
   const [position, setPosition] = useState<'table' | 'map'>('map');
@@ -110,15 +108,15 @@ export default function Home() {
   // const [timer, setTimer] = useState<NodeJS.Timeout>();
   // const [institutes, setInstitutes] = useState<Institute[]>();
   // const [isFetching, setIsFetching] = useInfiniteScroll(fetchMoreListItems);
-  const [scrollOptions, setScrollOptions] = useState<ScrollOptions>({ take: 20, skip: 0, hasEnd: false });
+  const [scrollOptions, setScrollOptions] = useState<ScrollOptions>({ take: 200, skip: 0, hasEnd: false });
   const [userCount, setUserCount] = useState<number>(0);
 
   useEffect(() => {
-    // const fetchInstituteCount = async (queryString?: string) => {
-    //   const count = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes/count?${queryString}`, keycloak.token);
-    //   setInstituteCount(count);
-    //   console.log('count ' + count);
-    // }
+    const fetchInstituteCount = async (queryString?: string) => {
+      const count = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes/count?${queryString}`, keycloak.token);
+      setInstituteCount(count);
+      console.log('count ' + count);
+    }
     const fetchCourses = async () => {
       const courses: Course[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/courses?order=ASC`, keycloak.token);
       // console.log(courses);
@@ -126,42 +124,29 @@ export default function Home() {
         setCourses(courses);
       }
     }
+    const fetchInstitutesLocation = async (queryString?: string) => {
+      // &take=-1&skip=-1
+      const institutesLocation: ResponseInstitute[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}&take=-1&skip=-1`, keycloak.token);
+      setInstitutesLocation(institutesLocation);
+    }
     const fetchInstitutes = async (queryString?: string) => {
       // &take=-1&skip=-1
-      setIsLoading((prev) => prev = true);
-      const institutesRes: ResponseInstitute[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}&take=-1&skip=-1`, keycloak.token);
-      if (institutesRes) {
-        const hasEnd = institutesRes.length < scrollOptions.take;
-        setScrollOptions({ ...scrollOptions, hasEnd });
-        setInstitutesAll(institutesRes);
-        setInstituteCount(institutesRes.length);
-        setUserCount(institutesRes.reduce((prev, institute) => prev += institute.userEnrollCount, 0));
-        // console.log(institutes.slice(undefined, scrollOptions.take));
-        setInstitutes(institutesRes.slice(undefined, scrollOptions.take));
-        // console.log(institutesRes.length);
-        setIsLoading((prev) => prev = false);
-      }
-      if (isLoading) {
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 1_000);
-      }
+      
+      const institutes: ResponseInstitute[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}`, keycloak.token);
+      const hasEnd = institutes.length < scrollOptions.take;
+      setScrollOptions({ ...scrollOptions, hasEnd });
+      setInstitutes(institutes);
+      setUserCount(institutes.reduce((prev, institute) => prev += institute.userEnrollCount, 0));
     }
-    // const fetchInstitutes = async (queryString?: string) => {
-    //   // &take=-1&skip=-1
-    //   const institutes: ResponseInstitute[] = await fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}`, keycloak.token);
-    //   const hasEnd = institutes.length < scrollOptions.take;
-    //   setScrollOptions({ ...scrollOptions, hasEnd });
-    //   setInstitutes(institutes);
-    //   setUserCount(institutes.reduce((prev, institute) => prev += institute.userEnrollCount, 0));
-    // }
     const queryString = handleQueryString();
-    // console.log(queryString);
-    // fetchInstituteCount(queryString);
+    console.log(queryString);
+    fetchInstituteCount(queryString);
     fetchCourses();
     if (query?.dateTo && query.dateFrom) {
+      // fetchInstitutesLocation(queryString)
       fetchInstitutes(queryString);
     } else {
+      setInstitutesLocation([]);
       setInstitutes([]);
     }
   }, [query]);
@@ -180,17 +165,14 @@ export default function Home() {
   }
 
   const fetchMoreData = () => {
-    // console.log('fetch more!! ', instituteCount);
     if ((institutes?.length || 0) < instituteCount) {
-      // const queryString = handleQueryString();
+      const queryString = handleQueryString();
       const skip = scrollOptions.skip + scrollOptions.take;
-      setScrollOptions({ ...scrollOptions, skip });
-      setInstitutes([...institutes, ...institutesAll.slice(skip, skip + scrollOptions.take)])
-      // fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}&take=${scrollOptions.take}&skip=${skip}`, keycloak.token).then((res: ResponseInstitute[]) => {
-      //   setScrollOptions({ ...scrollOptions, skip });
-      //   setInstitutes((prev) => ([...(prev || []), ...res]))
-      //   setUserCount(res.reduce((prev, institute) => prev += institute.userEnrollCount, userCount));
-      // });
+      fetchAPI('GET', `${process.env.BASEURL}/api/kidbright/enroll/institutes?${queryString}&take=${scrollOptions.take}&skip=${skip}`, keycloak.token).then((res: ResponseInstitute[]) => {
+        setScrollOptions({ ...scrollOptions, skip });
+        setInstitutes((prev) => ([...(prev || []), ...res]))
+        setUserCount(res.reduce((prev, institute) => prev += institute.userEnrollCount, userCount));
+      });
     } else {
       setScrollOptions((prev) => ({ ...prev, hasEnd: true }));
     }
@@ -213,8 +195,6 @@ export default function Home() {
     { label: 'Last 2 Day', value: [dayjs().add(-2, 'd'), dayjs()] },
     { label: 'Last 3 Day', value: [dayjs().add(-3, 'd'), dayjs()] },
     { label: 'Last 5 Days', value: [dayjs().add(-5, 'd'), dayjs()] },
-    { label: 'Last 7 Days', value: [dayjs().add(-7, 'd'), dayjs()] },
-    { label: 'Last 10 Days', value: [dayjs().add(-10, 'd'), dayjs()] },
     //   { label: 'Last 14 Days', value: [dayjs().add(-14, 'd'), dayjs()] },
     //   { label: 'Last 30 Days', value: [dayjs().add(-30, 'd'), dayjs()] },
     //   { label: 'Last 90 Days', value: [dayjs().add(-90, 'd'), dayjs()] },
@@ -254,9 +234,10 @@ export default function Home() {
             <Flex align="center" gap={'small'}>
               <HomeOutlined /> {mEnroll.instituteName}
             </Flex>
+
             {
               mEnroll.courses.reduce((pCourse, course) => {
-                course.users?.forEach(user => {
+                course.users.forEach(user => {
                   if (user.firstName.includes(search) || user.lastName.includes(search)) {
                     pCourse = (
                       <Flex align="center" gap={'small'}>
@@ -305,8 +286,8 @@ export default function Home() {
   }, [search, institutes]);
 
   const dataSourceLocation = useMemo(() => {
-    if (Array.isArray(institutesAll)) {
-      const memoIns = institutesAll.map((ins, insIndex) => {
+    if (Array.isArray(institutesLocation)) {
+      const memoIns = institutesLocation.map((ins, insIndex) => {
         return {
           key: `${ins.instituteId}-${insIndex}`,
           instituteId: ins.instituteId,
@@ -315,29 +296,25 @@ export default function Home() {
             lat: ins.coordinates.lat,
             long: ins.coordinates.long,
           },
-          userEnrollCount: ins.userEnrollCount,
           courses: ins.courses.map((course, index) => ({
             key: `${ins.instituteId}-${index}`,
             courseId: course.courseId,
             courseName: course.courseName,
-            userCount: course.userCount,
-            ...(course.users && {
-              users: course.users.map((user, userIndex) => ({
-                key: `${ins.instituteId}-user-${userIndex}-${user.userId}`,
-                userId: user.userId,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                enrollCreateAt: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
-              }))
-            })
+            users: course.users.map((user, userIndex) => ({
+              key: `${ins.instituteId}-user-${userIndex}-${user.userId}`,
+              userId: user.userId,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              enrollCreateAt: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
+            }))
           }))
         }
       })
       return memoIns;
     }
     return [];
-  }, [institutesAll]);
+  }, [institutesLocation]);
 
   const dataSource = useMemo(() => {
     if (Array.isArray(memoInstitutes)) {
@@ -346,7 +323,6 @@ export default function Home() {
           key: `${ins.instituteId}-${insIndex}`,
           instituteId: ins.instituteId,
           instituteName: ins.instituteName,
-          userEnrollCount: ins.userEnrollCount,
           coordinates: {
             lat: ins.coordinates.lat,
             long: ins.coordinates.long,
@@ -355,17 +331,14 @@ export default function Home() {
             key: `${ins.instituteId}-${index}`,
             courseId: course.courseId,
             courseName: course.courseName,
-            userCount: course.userCount,
-            ...(course.users && {
-              users: course.users.map((user, userIndex) => ({
-                key: `${ins.instituteId}-user-${userIndex}-${user.userId}`,
-                userId: user.userId,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                enrollCreateAt: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
-              }))
-            })
+            users: course.users.map((user, userIndex) => ({
+              key: `${ins.instituteId}-user-${userIndex}-${user.userId}`,
+              userId: user.userId,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              enrollCreateAt: dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss'),
+            }))
           }))
         }
       })
@@ -391,7 +364,6 @@ export default function Home() {
           </Col>
           <Col span={16}>
             <Select
-              disabled={institutes?.length === 0}
               allowClear
               value={query?.course}
               placeholder={'กรุณาเลือก วิชา'}
@@ -421,37 +393,40 @@ export default function Home() {
           <Col span={8}>
             <Card style={{ height: '150px' }}>
               <Title style={titleStyle} level={4}>จำนวนผู้ลงทะเบียน</Title>
-              <Title style={{ ...titleStyle, textAlign: 'end' }} level={3}>{search ? dataSource.reduce((prev, data) => prev += data.userEnrollCount, 0) : userCount}</Title>
+              {/* <Title style={{ ...titleStyle, textAlign: 'end' }} level={3}>{institutes?.length}</Title> */}
+              <Title style={{ ...titleStyle, textAlign: 'end' }} level={3}>{userCount}</Title>
             </Card>
           </Col>
         </Row>
         <Flex justify="space-between" gap={'small'} style={{ width: '100%' }}>
           <Radio.Group disabled={institutes?.length === 0} value={position} onChange={(e) => { setPosition(e.target.value) }}>
-            <Radio.Button value="table">ตาราง</Radio.Button>
-            <Radio.Button value="map">แผนที่</Radio.Button>
+            <Radio.Button value="table">Table</Radio.Button>
+            <Radio.Button value="map">Map</Radio.Button>
           </Radio.Group>
           <Button disabled={institutes?.length === 0} style={{ backgroundColor: "#81B29A", color: "#fff" }} onClick={() => handleDLF()}>ดาวน์โหลดข้อมูลทั้งหมด</Button>
         </Flex>
-        <Spin spinning={isLoading} fullscreen />
         {
           (institutes?.length ?? 0) > 0
-            ? position === 'table'
-              ? <InfiniteScroll
+            ? (
+              <InfiniteScroll
                 dataLength={institutes?.length ?? 0}
                 next={fetchMoreData}
                 hasMore={!scrollOptions.hasEnd}
                 loader={Array.from({ length: 4 }).map((_, skeIndex) => <Skeleton key={`skeleton-${skeIndex}`} active />)}
               >
-                <InstituteEnrollTable institute={dataSource || []} />
-                {/* <pre> {JSON.stringify(dataSource, null, 2)} </pre > */}
+                {
+                  position === 'table' ? <InstituteEnrollTable institute={dataSource || []} /> : <LongdoMap institutes={dataSourceLocation || []} />
+                }
               </InfiniteScroll>
-              :
-              <MapRender locations={search ? dataSource : dataSourceLocation || []} />
-              // <LongdoMap institutes={search ? dataSource : dataSourceLocation || []} />
-            : <Flex vertical justify="center" style={{ height: '400px' }}>
-              <Empty description={!query?.dateFrom && !query?.dateTo ? "กรุณาเลือก 'ช่วงวันที่' ในการค้นหา" : institutes?.length === 0 ? "ไม่พบข้อมูลที่ค้นหา" : undefined} />
-            </Flex>
+            )
+            : (
+              <Flex vertical justify="center" style={{ height: '400px' }}>
+                <Empty description={!query?.dateFrom && !query?.dateTo ? "กรุณาเลือก 'ช่วงวันที่' ในการค้นหา" : institutes?.length === 0 ? "ไม่พบข้อมูลที่ค้นหา" : undefined} />
+              </Flex>
+
+            )
         }
+
       </Flex>
       {/* <pre> {JSON.stringify(courses, null, 2)} </pre > */}
       {/* <pre> {JSON.stringify(enrolls, null, 2)} </pre > */}

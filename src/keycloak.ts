@@ -8,6 +8,6 @@ const keycloakConfig = {
   clientId: process.env.KEYCLOAK_CLIENTID || '',
 }
 
-const keycloak = new Keycloak(keycloakConfig)
+const keycloak = new Keycloak(keycloakConfig);
 
-export default keycloak
+export default keycloak;

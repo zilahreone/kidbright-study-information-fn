@@ -13,6 +13,7 @@ type instituteProps = {
   instituteId: string;
   instituteName: string;
   coordinates: { lat: number, long: number },
+  userEnrollCount: number,
   courses: {
     key?: string;
     courseId: string;
@@ -50,58 +51,69 @@ export default function LongdoMap({ institutes }: { institutes: instituteProps[]
       }
     ) => {
       const tag = document.createElement('div')
-      tag.setAttribute('style', 'padding: 0 20px 10px; position: absolute; bottom: 46px; min-width: 300px; box-shadow: 0 15px 30px 0 rgba(0,0,0,0.11),0 5px 15px 0 rgba(0,0,0,0.08); background-color: #ffffff;border-radius: 0.5rem;border-left: 0 solid #00ff99;')
+      tag.setAttribute('style', 'padding: 0 20px 10px; position: absolute; bottom: 46px; min-width: 400px; box-shadow: 0 15px 30px 0 rgba(0,0,0,0.11),0 5px 15px 0 rgba(0,0,0,0.08); background-color: #ffffff;border-radius: 0.5rem;border-left: 0 solid #00ff99;')
       const p1 = document.createElement('p');
       p1.setAttribute('style', 'width: fit-content; font-weight: bold;')
       const text1 = document.createTextNode(`${enroll.instituteName || ''}`);
       p1.append(text1);
       tag.appendChild(p1);
+
       enroll.courses.forEach(course => {
-        const details = document.createElement('details');
-        details.setAttribute('open', 'true')
-        const title = document.createElement('summary');
-        // title.style = 'font-weight: bold;'
-        title.append(document.createTextNode(course.courseName));
-        const p = document.createElement('p');
-        const table = document.createElement('table');
-        table.setAttribute('style', 'border: 1px solid black;border-collapse: separate; border-radius:4px; white-space:nowrap; margin: 0 0 0')
-        table.setAttribute('cellpadding', '8px');
-        const thead = document.createElement('thead');
-        const row = document.createElement('tr');
+        
+        if (course.users && course.users.length > 0) {
+          const p = document.createElement('p');
+          const details = document.createElement('details');
+          details.setAttribute('open', 'true')
+          const title = document.createElement('summary');
+          // title.style = 'font-weight: bold;'
+          title.append(document.createTextNode(course.courseName));
+          const table = document.createElement('table');
+          table.setAttribute('style', 'border: 1px solid black;border-collapse: separate; border-radius:4px; white-space:nowrap; margin: 0 0 0')
+          table.setAttribute('cellpadding', '8px');
+          const thead = document.createElement('thead');
+          const row = document.createElement('tr');
 
-        const headers: string[] = ['ชื่อจริง', 'นามสกุล', 'อีเมล', 'เวลาลงทะเบียน'];
-        headers.forEach((header) => {
-          const cell = document.createElement('th');
-          const cellText = document.createTextNode(header);
-          cell.appendChild(cellText);
-          row.appendChild(cell);
-        });
-
-        course.users.forEach(user => {
-          const rowUser = document.createElement('tr');
-          // const enrollCreateAt = new Date(user.enrollCreateAt).toLocaleTimeString('th-TH', {
-          //   year: 'numeric',
-          //   month: '2-digit',
-          //   day: '2-digit',
-          //   hour: '2-digit',
-          //   minute: '2-digit',
-          //   second: '2-digit',
-          // }).replace(/\//g, '-').replace(',', '');
-          const headers: string[] = [user.firstName, user.lastName, user.email, dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss')];
-          headers.forEach(header => {
-            const cell = document.createElement('td');
+          const headers: string[] = ['ชื่อจริง', 'นามสกุล', 'อีเมล', 'เวลาลงทะเบียน'];
+          headers.forEach((header) => {
+            const cell = document.createElement('th');
             const cellText = document.createTextNode(header);
             cell.appendChild(cellText);
-            rowUser.appendChild(cell);
+            row.appendChild(cell);
           });
-          row.appendChild(rowUser)
-        });
-        thead.appendChild(row);
-        table.appendChild(thead);
-        p.appendChild(table);
-        details.appendChild(p);
-        details.appendChild(title);
-        tag.appendChild(details);
+
+          course.users?.forEach(user => {
+            const rowUser = document.createElement('tr');
+            // const enrollCreateAt = new Date(user.enrollCreateAt).toLocaleTimeString('th-TH', {
+            //   year: 'numeric',
+            //   month: '2-digit',
+            //   day: '2-digit',
+            //   hour: '2-digit',
+            //   minute: '2-digit',
+            //   second: '2-digit',
+            // }).replace(/\//g, '-').replace(',', '');
+            const headers: string[] = [user.firstName, user.lastName, user.email, dayjs(user.enrollCreateAt).format('DD MMMM YYYY HH:mm:ss')];
+            headers.forEach(header => {
+              const cell = document.createElement('td');
+              const cellText = document.createTextNode(header);
+              cell.appendChild(cellText);
+              rowUser.appendChild(cell);
+            });
+            row.appendChild(rowUser)
+          });
+          thead.appendChild(row);
+          table.appendChild(thead);
+          p.appendChild(table);
+          details.appendChild(p);
+          details.appendChild(title);
+          tag.appendChild(details);
+        } else {
+          const ul = document.createElement('ul');
+          const li = document.createElement('li');
+          li.append(document.createTextNode(course.courseName))
+          ul.appendChild(li);
+          tag.appendChild(ul);
+        }
+
       });
       return tag.outerHTML;
     }

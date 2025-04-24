@@ -16,9 +16,9 @@ type NavObject = {
 }
 
 type Nav = {
-  home: NavObject,
+  home?: NavObject,
   course?: NavObject,
-  profile: NavObject,
+  profil?: NavObject,
   manage?: NavObject
 }
 
@@ -28,9 +28,9 @@ export default function Navbar() {
   const { isRole } = useStore();
 
   const navObj: Nav = {
-    home: { name: 'Home', path: RouterPath.HOME },
-    course: { name: 'Course', path: RouterPath.COURSE },
-    profile: { name: 'Profile', path: RouterPath.PROFILE },
+    ...(keycloak.authenticated ? { home: { name: 'Home', path: RouterPath.HOME } } : {}),
+    ...(keycloak.authenticated ? { course: { name: 'Course', path: RouterPath.COURSE } } : {}),
+    ...(keycloak.authenticated ? { profile: { name: 'Profile', path: RouterPath.PROFILE } }: {}),
     ...(isRole === 'admin' ? { manage: { name: 'Manage', path: RouterPath.MANAGE } } : {}),
   }
 
@@ -93,7 +93,7 @@ export default function Navbar() {
           ))
         }
       </Flex>
-      <NavLink to="#" style={{ color: "#FFF" }} onClick={() => keycloak.logout()}>Logout</NavLink>
+      <NavLink to="#" style={{ color: "#FFF" }} onClick={() => keycloak.authenticated ? keycloak.logout() : keycloak.login()}>{ keycloak.authenticated ? 'Logout' : 'Login'}</NavLink>
       {/* <Dropdown menu={{ items }} trigger={['click']}>
         <a onClick={(e) => e.preventDefault()}>
           <Space>

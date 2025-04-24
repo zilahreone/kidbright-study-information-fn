@@ -1,14 +1,16 @@
-import { Card, Col, Flex, Row, Table } from "antd";
+import { Card, Col, Flex, Row } from "antd";
 
 type instituteProps = {
   key?: string;
   instituteId: string;
   instituteName: string;
   coordinates: { lat: number, long: number },
+  userEnrollCount: number,
   courses: {
     key?: string;
     courseId: string;
     courseName: string;
+    userCount: number;
     users: {
       key?: string;
       userId: string;
@@ -32,14 +34,23 @@ export default function InstituteEnrollTable({ institute }: { institute: institu
       {
         Array.isArray(institute)
           ? (
-            institute.map((ins) => (
-              <Card key={ins.key} title={`โรงเรียน : ${ins.instituteName}`}>
+            institute.map((ins, index) => (
+              <Card key={ins.key} title={
+                <Flex justify="space-between">
+                  <div>{`${index + 1}. ${ins.instituteName}`}</div>
+                  <div>{`จำนวนผู้ลงทะเบียน : ${ins.userEnrollCount}`}</div>
+                </Flex>
+              }>
                 <Flex vertical gap={'middle'}>
                   {
                     ins.courses?.map((course) => {
                       return (
-                        <Card key={course.key} type="inner" title={`วิชา : ${course.courseName}`}>
-                          {/* <List
+                        course.users ?
+                          <Card key={course.key} type="inner" title={<Flex justify="space-between">
+                            <div>{`วิชา : ${course.courseName}`}</div>
+                            <div>{`จำนวนผู้ลงทะเบียน : ${course.userCount}`}</div>
+                          </Flex>}>
+                            {/* <List
                             size="small"
                             bordered
                             dataSource={course.users?.map((user, index) => ({
@@ -51,7 +62,7 @@ export default function InstituteEnrollTable({ institute }: { institute: institu
                             }))}
                             renderItem={item => <List.Item>{item.firstName}</List.Item>}
                           /> */}
-                          {/* <Table
+                            {/* <Table
                             // loading={false}
                             rowKey='key'
                             pagination={false}
@@ -69,28 +80,35 @@ export default function InstituteEnrollTable({ institute }: { institute: institu
                             dataSource={course.users}
                           // scroll={{ y: 300 }}
                           /> */}
-                          <Row style={{ fontWeight: 'bold', padding: '10px 0' }}>
-                            <Col span={5}>ชื่อ</Col>
-                            <Col span={5}>นามสกุล</Col>
-                            <Col span={8}>อีเมล</Col>
-                            <Col span={6}>เวลาลงทะเบียน</Col>
-                          </Row>
-                          {
-                            course.users.map((user, index) => (
-                              <Row key={`user-${index}`} style={{ padding: '5px 0' }}>
-                                <Col span={5}>{ user.firstName }</Col>
-                                <Col span={5}>{ user.lastName }</Col>
-                                <Col span={8}>{ user.email }</Col>
-                                <Col span={6}>{ user.enrollCreateAt }</Col>
-                              </Row>
-                            ))
-                          }
-                        </Card>
+                            {/* <div style={{ textAlign: 'end' }}>{`จำนวนผู้ลงทะเบียน : ${course.users.length}`}</div> */}
+                            <Row style={{ fontWeight: 'bold', padding: '10px 0' }}>
+                              <Col span={5}>ชื่อ</Col>
+                              <Col span={5}>นามสกุล</Col>
+                              <Col span={8}>อีเมล</Col>
+                              <Col span={6}>เวลาลงทะเบียน</Col>
+                            </Row>
+                            {
+                              course.users?.map((user, index) => (
+                                <Row key={`user-${index}`} style={{ padding: '5px 0' }}>
+                                  <Col span={5}>{user.firstName}</Col>
+                                  <Col span={5}>{user.lastName}</Col>
+                                  <Col span={8}>{user.email}</Col>
+                                  <Col span={6}>{user.enrollCreateAt}</Col>
+                                </Row>
+                              ))
+                            }
+                          </Card>
+                          : <div key={course.key}>
+                            <Flex justify="space-between">
+                              <div>{`วิชา : ${course.courseName}`}</div>
+                              <div>{`จำนวนผู้ลงทะเบียน : ${course.userCount}`}</div>
+                            </Flex>
+                          </div>
                       )
                     })
                   }
                 </Flex>
-              </Card>
+              </Card >
             ))
           )
           : (
